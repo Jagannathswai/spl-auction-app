@@ -22,6 +22,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/teams/my/team
+router.get('/my/team', protect, async (req, res) => {
+  try {
+    const team = await Team.findOne({ owner: req.user._id })
+      .populate('players');
+    if (!team) return res.status(404).json({ success: false, message: 'No team assigned' });
+    res.json({ success: true, team });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // GET /api/teams/:id
 router.get('/:id', protect, async (req, res) => {
   try {
@@ -29,18 +41,6 @@ router.get('/:id', protect, async (req, res) => {
       .populate('owner', 'name email phone')
       .populate('players');
     if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
-    res.json({ success: true, team });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// GET /api/teams/my/team
-router.get('/my/team', protect, async (req, res) => {
-  try {
-    const team = await Team.findOne({ owner: req.user._id })
-      .populate('players');
-    if (!team) return res.status(404).json({ success: false, message: 'No team assigned' });
     res.json({ success: true, team });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
