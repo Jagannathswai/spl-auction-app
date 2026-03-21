@@ -152,10 +152,6 @@ export default function AuctionRoom() {
     }
 };
 
-  const exportExcel = () => {
-    const url = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/auction/${roomId}/excel`;
-    window.open(url, '_blank');
-  };
 
   const availablePlayers = players.filter(p => p.status === 'available');
   const soldPlayers = players.filter(p => p.status === 'sold');
