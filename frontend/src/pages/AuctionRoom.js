@@ -152,6 +152,11 @@ export default function AuctionRoom() {
     }
 };
 
+const sendChat = () => {
+    if (!chatInput.trim()) return;
+    socketRef.current.emit('chat:message', { roomId, message: chatInput, userName: user.name, role: user.role });
+    setChatInput('');
+};
 
   const availablePlayers = players.filter(p => p.status === 'available');
   const soldPlayers = players.filter(p => p.status === 'sold');
@@ -160,12 +165,11 @@ export default function AuctionRoom() {
   const incrementValues = [5, 10, 20, 50, 100];
 
   // Fix photo URL - handle both uploaded files and external URLs
-  const getPhotoSrc = (photo) => {
+ const getPhotoSrc = (photo) => {
     if (!photo) return null;
     if (photo.startsWith("http")) return photo;
-    return "http://localhost:5000" + photo;
-  };
-
+    return `${process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000'}` + photo;
+};
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
       <div style={{ fontFamily: 'Bebas Neue', fontSize: '32px', color: 'var(--accent-gold)', letterSpacing: '4px' }}>LOADING AUCTION...</div>
