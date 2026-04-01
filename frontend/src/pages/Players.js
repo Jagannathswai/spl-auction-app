@@ -1,7 +1,7 @@
 // import React, { useEffect, useState } from 'react';
 // import { getApi, useAuthStore } from '../store';
 // import toast from 'react-hot-toast';
-// import { MdAdd, MdSearch, MdEdit, MdDelete, MdClose, MdUploadFile } from 'react-icons/md';
+// import { MdAdd, MdSearch, MdEdit, MdDelete, MdClose, MdUploadFile, MdLink } from 'react-icons/md';
 
 // const ROLES = ['Batsman', 'Bowler', 'All-Rounder', 'Wicket-Keeper'];
 // const GRADES = ['A+', 'A', 'B', 'C'];
@@ -10,7 +10,7 @@
 // const defaultForm = {
 //   name: '', role: 'Batsman', nationality: 'Indian', age: '',
 //   battingStyle: 'Right-Hand', bowlingStyle: '', grade: 'B',
-//   basePrice: '', isCapped: false,
+//   basePrice: '', isCapped: false, photoUrl: '',
 //   stats: { matches: 0, runs: 0, wickets: 0, average: 0, strikeRate: 0, economy: 0, centuries: 0, halfCenturies: 0, highestScore: 0, bestBowling: '0/0' }
 // };
 
@@ -24,6 +24,7 @@
 //   const [form, setForm] = useState(defaultForm);
 //   const [photoFile, setPhotoFile] = useState(null);
 //   const [photoPreview, setPhotoPreview] = useState(null);
+//   const [photoMode, setPhotoMode] = useState('upload'); // 'upload' or 'url'
 //   const [search, setSearch] = useState('');
 //   const [filterRole, setFilterRole] = useState('');
 //   const [filterStatus, setFilterStatus] = useState('');
@@ -48,7 +49,12 @@
 //   useEffect(() => { fetchPlayers(); }, [search, filterRole, filterStatus]);
 
 //   const openAdd = () => {
-//     setEditing(null); setForm(defaultForm); setPhotoFile(null); setPhotoPreview(null); setShowModal(true);
+//     setEditing(null);
+//     setForm(defaultForm);
+//     setPhotoFile(null);
+//     setPhotoPreview(null);
+//     setPhotoMode('upload');
+//     setShowModal(true);
 //   };
 
 //   const openEdit = (player) => {
@@ -57,11 +63,14 @@
 //       name: player.name, role: player.role, nationality: player.nationality,
 //       age: player.age || '', battingStyle: player.battingStyle || 'Right-Hand',
 //       bowlingStyle: player.bowlingStyle || '', grade: player.grade,
-//       basePrice: player.basePrice, isCapped: player.isCapped,
+//       basePrice: player.basePrice, isCapped: player.isCapped, photoUrl: player.photoUrl || '',
 //       stats: player.stats || defaultForm.stats
 //     });
-//     setPhotoPreview(player.photo ? `http://localhost:5000${player.photo}` : null);
+//     setPhotoPreview(player.photo
+//       ? (player.photo.startsWith('http') ? player.photo : 'http://localhost:5000' + player.photo)
+//       : null);
 //     setPhotoFile(null);
+//     setPhotoMode(player.photoUrl ? 'url' : 'upload');
 //     setShowModal(true);
 //   };
 
@@ -74,21 +83,38 @@
 //     reader.readAsDataURL(file);
 //   };
 
+//   const handlePhotoUrlChange = (e) => {
+//     const url = e.target.value;
+//     setForm({ ...form, photoUrl: url });
+//     if (url) setPhotoPreview(url);
+//     else setPhotoPreview(null);
+//   };
+
+//   const getPhotoSrc = (player) => {
+//     if (!player.photo) return null;
+//     if (player.photo.startsWith('http')) return player.photo;
+//     return 'http://localhost:5000' + player.photo;
+//   };
+
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
 //     setSaving(true);
 //     try {
 //       const api = getApi();
 //       const formData = new FormData();
-      
+
 //       Object.entries(form).forEach(([k, v]) => {
 //         if (k === 'stats') formData.append('stats', JSON.stringify(v));
 //         else formData.append(k, v);
 //       });
-//       if (photoFile) formData.append('photo', photoFile);
+
+//       // Photo: file takes priority over URL
+//       if (photoFile) {
+//         formData.append('photo', photoFile);
+//       }
 
 //       if (editing) {
-//         await api.put(`/players/${editing}`, formData);
+//         await api.put('/players/' + editing, formData);
 //         toast.success('Player updated! ✅');
 //       } else {
 //         await api.post('/players', formData);
@@ -105,32 +131,29 @@
 //   };
 
 //   const handleDelete = async (id, name) => {
-//     if (!window.confirm(`Delete ${name}?`)) return;
+//     if (!window.confirm('Delete ' + name + '?')) return;
 //     try {
-//       await getApi().delete(`/players/${id}`);
+//       await getApi().delete('/players/' + id);
 //       toast.success('Player deleted');
 //       fetchPlayers();
-//     } catch (err) {
+//     } catch {
 //       toast.error('Failed to delete');
 //     }
 //   };
 
 //   const statusBadge = (status) => {
 //     const map = { sold: 'badge-green', unsold: 'badge-red', available: 'badge-gold', in_auction: 'badge-blue' };
-//     return <span className={`badge ${map[status] || 'badge-gray'}`}>{status}</span>;
+//     return <span className={'badge ' + (map[status] || 'badge-gray')}>{status}</span>;
 //   };
 
 //   return (
 //     <div className="fade-in">
-//       {/* Header */}
 //       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
 //         <div>
 //           <h1 style={{ fontFamily: 'Bebas Neue', fontSize: '40px', letterSpacing: '3px', color: 'var(--accent-gold)' }}>PLAYERS</h1>
 //           <p style={{ color: 'var(--text-secondary)', fontFamily: 'Rajdhani', fontSize: '14px' }}>{players.length} players total</p>
 //         </div>
-//         {isAdmin && (
-//           <button className="btn btn-primary" onClick={openAdd}><MdAdd size={18} /> Add Player</button>
-//         )}
+//         {isAdmin && <button className="btn btn-primary" onClick={openAdd}><MdAdd size={18} /> Add Player</button>}
 //       </div>
 
 //       {/* Filters */}
@@ -157,14 +180,8 @@
 //           <table>
 //             <thead>
 //               <tr>
-//                 <th>Player</th>
-//                 <th>Role</th>
-//                 <th>Nationality</th>
-//                 <th>Grade</th>
-//                 <th>Base Price</th>
-//                 <th>Status</th>
-//                 <th>Sold To</th>
-//                 <th>Sold Price</th>
+//                 <th>Player</th><th>Role</th><th>Nationality</th><th>Grade</th>
+//                 <th>Base Price</th><th>Status</th><th>Sold To</th><th>Sold Price</th>
 //                 {isAdmin && <th>Actions</th>}
 //               </tr>
 //             </thead>
@@ -175,13 +192,9 @@
 //                 <tr key={player._id}>
 //                   <td>
 //                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-//                       <div style={{
-//                         width: 40, height: 40, borderRadius: '50%', overflow: 'hidden',
-//                         background: 'var(--bg-secondary)', flexShrink: 0,
-//                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
-//                       }}>
-//                         {player.photo
-//                           ? <img src={`http://localhost:5000${player.photo}`} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+//                       <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+//                         {getPhotoSrc(player)
+//                           ? <img src={getPhotoSrc(player)} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
 //                           : '🏏'}
 //                       </div>
 //                       <div>
@@ -192,11 +205,11 @@
 //                   </td>
 //                   <td><span className="badge badge-gray">{player.role}</span></td>
 //                   <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{player.nationality}</td>
-//                   <td><span className={`badge ${player.grade === 'A+' ? 'badge-gold' : player.grade === 'A' ? 'badge-blue' : 'badge-gray'}`}>{player.grade}</span></td>
+//                   <td><span className={'badge ' + (player.grade === 'A+' ? 'badge-gold' : player.grade === 'A' ? 'badge-blue' : 'badge-gray')}>{player.grade}</span></td>
 //                   <td style={{ fontFamily: 'Rajdhani', fontWeight: '700', color: 'var(--accent-gold)' }}>₹{player.basePrice}L</td>
 //                   <td>{statusBadge(player.status)}</td>
 //                   <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{player.soldTo?.name || '-'}</td>
-//                   <td style={{ fontFamily: 'Rajdhani', fontWeight: '700', color: 'var(--accent-green)' }}>{player.soldPrice ? `₹${player.soldPrice}L` : '-'}</td>
+//                   <td style={{ fontFamily: 'Rajdhani', fontWeight: '700', color: 'var(--accent-green)' }}>{player.soldPrice ? '₹' + player.soldPrice + 'L' : '-'}</td>
 //                   {isAdmin && (
 //                     <td>
 //                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -215,16 +228,7 @@
 //       {/* Modal */}
 //       {showModal && (
 //         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-//           <div 
-//   className="modal"
-//   style={{
-//     maxWidth: "640px",
-//     width: "100%",
-//     background: "var(--bg-primary)",
-//     borderRadius: "12px",
-//     padding: "24px"
-//   }}
-// >
+//           <div className="modal" style={{ maxWidth: '640px' }}>
 //             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
 //               <h2 style={{ fontFamily: 'Bebas Neue', fontSize: '28px', letterSpacing: '2px', color: 'var(--accent-gold)' }}>
 //                 {editing ? 'EDIT PLAYER' : 'ADD PLAYER'}
@@ -233,23 +237,47 @@
 //             </div>
 
 //             <form onSubmit={handleSubmit}>
-//               {/* Photo upload */}
-//               <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'flex-start' }}>
-//                 <div style={{
-//                   width: 100, height: 100, borderRadius: '12px',
-//                   background: 'var(--bg-secondary)', border: '2px dashed var(--border)',
-//                   overflow: 'hidden', flexShrink: 0,
-//                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px',
-//                 }}>
-//                   {photoPreview ? <img src={photoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏏'}
-//                 </div>
-//                 <div>
-//                   <label className="form-label">Player Photo</label>
-//                   <label className="btn btn-ghost" style={{ cursor: 'pointer', display: 'inline-flex', marginTop: '6px' }}>
-//                     <MdUploadFile /> Upload Photo
-//                     <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
-//                   </label>
-//                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Max 5MB, JPG/PNG</p>
+//               {/* Photo Section */}
+//               <div style={{ marginBottom: '20px' }}>
+//                 <label className="form-label" style={{ marginBottom: '10px', display: 'block' }}>Player Photo</label>
+
+//                 {/* Photo Preview */}
+//                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '12px' }}>
+//                   <div style={{ width: 90, height: 90, borderRadius: '12px', background: 'var(--bg-secondary)', border: '2px dashed var(--border)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+//                     {photoPreview
+//                       ? <img src={photoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setPhotoPreview(null)} />
+//                       : '🏏'}
+//                   </div>
+
+//                   {/* Mode toggle */}
+//                   <div style={{ flex: 1 }}>
+//                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+//                       <button type="button" className={'btn ' + (photoMode === 'upload' ? 'btn-primary' : 'btn-ghost')} style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setPhotoMode('upload')}>
+//                         <MdUploadFile size={14} /> Upload File
+//                       </button>
+//                       <button type="button" className={'btn ' + (photoMode === 'url' ? 'btn-primary' : 'btn-ghost')} style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setPhotoMode('url')}>
+//                         <MdLink size={14} /> Photo URL
+//                       </button>
+//                     </div>
+
+//                     {photoMode === 'upload' ? (
+//                       <label className="btn btn-ghost" style={{ cursor: 'pointer', display: 'inline-flex', fontSize: '13px' }}>
+//                         Choose Image
+//                         <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+//                       </label>
+//                     ) : (
+//                       <input
+//                         className="input"
+//                         placeholder="https://example.com/player.jpg"
+//                         value={form.photoUrl}
+//                         onChange={handlePhotoUrlChange}
+//                         style={{ fontSize: '13px' }}
+//                       />
+//                     )}
+//                     <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+//                       {photoMode === 'upload' ? 'Max 5MB, JPG/PNG' : 'Paste any image URL'}
+//                     </p>
+//                   </div>
 //                 </div>
 //               </div>
 
@@ -296,10 +324,7 @@
 //                 </div>
 //               </div>
 
-//               {/* Stats */}
-//               <h3 style={{ fontFamily: 'Rajdhani', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '12px', marginTop: '8px' }}>
-//                 Career Stats
-//               </h3>
+//               <h3 style={{ fontFamily: 'Rajdhani', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Career Stats</h3>
 //               <div className="grid-3" style={{ gap: '10px' }}>
 //                 {[['matches','Matches'],['runs','Runs'],['wickets','Wickets'],['average','Average'],['strikeRate','Strike Rate'],['economy','Economy']].map(([key, label]) => (
 //                   <div key={key} className="form-group" style={{ marginBottom: '10px' }}>
@@ -311,7 +336,7 @@
 
 //               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
 //                 <input type="checkbox" id="capped" checked={form.isCapped} onChange={e => setForm({...form, isCapped: e.target.checked})} />
-//                 <label htmlFor="capped" style={{ fontFamily: 'Rajdhani', fontSize: '14px', cursor: 'pointer' }}>⭐ Capped Player (International)</label>
+//                 <label htmlFor="capped" style={{ fontFamily: 'Rajdhani', fontSize: '14px', cursor: 'pointer' }}>⭐ Capped Player</label>
 //               </div>
 
 //               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -358,6 +383,40 @@ export default function Players() {
   const [filterRole, setFilterRole] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const handleExcelImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const XLSX = await import('xlsx');
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+      const players = rows.map(row => ({
+        name: row['Name'] || row['name'] || '',
+        age: row['Age'] || row['age'] || '',
+        role: row['Role'] || row['role'] || 'Batsman',
+        nationality: row['Nationality'] || row['nationality'] || 'Indian',
+        basePrice: row['Base Price (Lakhs)'] || row['basePrice'] || 10,
+        grade: row['Grade'] || row['grade'] || 'B',
+        battingStyle: row['Batting Style'] || row['battingStyle'] || 'Right-Hand',
+        bowlingStyle: row['Bowling Style'] || row['bowlingStyle'] || '',
+        photoUrl: row['Photo URL'] || row['photoUrl'] || '',
+        photo: row['Photo URL'] || row['photoUrl'] || '',
+      })).filter(p => p.name);
+      const { data: res } = await getApi().post('/players/bulk/import', { players });
+      toast.success(res.players.length + ' players imported! 🏏');
+      fetchPlayers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Import failed');
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
 
   const fetchPlayers = async () => {
     try {
@@ -482,7 +541,15 @@ export default function Players() {
           <h1 style={{ fontFamily: 'Bebas Neue', fontSize: '40px', letterSpacing: '3px', color: 'var(--accent-gold)' }}>PLAYERS</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'Rajdhani', fontSize: '14px' }}>{players.length} players total</p>
         </div>
-        {isAdmin && <button className="btn btn-primary" onClick={openAdd}><MdAdd size={18} /> Add Player</button>}
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
+              📥 {importing ? 'Importing...' : 'Import Excel'}
+              <input type="file" accept=".xlsx,.xls" onChange={handleExcelImport} style={{ display: 'none' }} />
+            </label>
+            <button className="btn btn-primary" onClick={openAdd}><MdAdd size={18} /> Add Player</button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
